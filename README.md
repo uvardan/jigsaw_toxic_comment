@@ -116,14 +116,11 @@ Per-class results:
 A clean recommended structure:
 
 ```text
-capstone-project/
+jigsaw_toxic_comment/
 ├── README.md
-├── notebooks/
-│   └── 01_jigsaw_eda_and_cleaning.ipynb
+├── 01_jigsaw_eda_and_cleaning.ipynb
 ├── data/
 │   └── train.csv
-├── .gitignore
-└── requirements.txt
 ```
 
 ## Jupyter Notebook
