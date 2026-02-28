@@ -128,7 +128,7 @@ Main analysis notebook:
 - `notebooks/01_jigsaw_eda_and_cleaning.ipynb`
 
 After uploading to GitHub, replace the line below with your actual notebook link if desired:
-- Notebook link: `https://github.com/<your-username>/<your-repo>/blob/main/notebooks/01_jigsaw_eda_and_cleaning.ipynb`
+- Notebook link: `https://github.com/uvardan/jigsaw_toxic_comment/01_jigsaw_eda_and_cleaning.ipynb`
 
 ## How to Run
 1. Clone the repository
