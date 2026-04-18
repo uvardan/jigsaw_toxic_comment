@@ -1,143 +1,210 @@
-# Capstone Project: Toxic Comment Triage with EDA and Baseline Modeling
+# Capstone Project: Risk-Aware Toxic Comment Triage System
 
 ## Project Overview
-This capstone explores a human-in-the-loop text triage workflow using the Jigsaw Toxic Comment Classification dataset. The goal is to route comments into one of three operational classes:
+This capstone builds a **risk-aware, human-in-the-loop text classification system** using the Jigsaw Toxic Comment dataset.  
 
-- **safe**
-- **needs_review**
-- **high_risk**
+The goal is not only to classify text, but to **support real-world decision-making** by routing content into three operational categories:
 
-This framing supports practical moderation by separating clearly safe content from severe risk and ambiguous cases that may need human review.
+- **safe** → automatically processed  
+- **needs_review** → sent to human reviewers  
+- **high_risk** → flagged for immediate action  
+
+This framing reflects practical moderation systems used in real-world AI applications.
+
+---
 
 ## Research Question
-Can a baseline machine learning model, supported by exploratory data analysis (EDA) and simple feature engineering, effectively triage toxic comments into **safe**, **needs_review**, and **high_risk** categories?
+How can a machine learning system classify user-generated text into safe, needs human review, and high-risk categories to support reliable and efficient human decision-making?
+
+---
 
 ## Dataset
-- **Source:** Kaggle - Jigsaw Toxic Comment Classification Challenge
-- **Primary file used:** `train.csv`
-- **Core columns:**
-  - `comment_text`
-  - `toxic`
-  - `severe_toxic`
-  - `obscene`
-  - `threat`
-  - `insult`
-  - `identity_hate`
+- **Source:** Kaggle – Jigsaw Toxic Comment Classification Challenge  
+- **Size:** ~159k comments  
+- **Labels:** multi-label toxicity indicators  
 
-## Label Mapping
-The original binary toxicity columns were transformed into a 3-class triage label:
+### Original Labels
+- toxic  
+- severe_toxic  
+- obscene  
+- threat  
+- insult  
+- identity_hate  
 
-- **safe**: all toxicity labels are 0
-- **high_risk**: `threat = 1` or `severe_toxic = 1` or `identity_hate = 1`
-- **needs_review**: all other toxic comments not classified as high-risk
+---
+
+## Triage Label Mapping
+The original multi-label dataset was transformed into a **3-class triage system**:
+
+- **safe** → no toxicity labels  
+- **high_risk** → threat OR severe_toxic OR identity_hate  
+- **needs_review** → all remaining toxic content  
+
+This mapping enables a **decision-focused classification system**, not just a prediction model.
+
+---
 
 ## Methodology
-### 1. Data Cleaning
-- Verified required columns were present
-- Checked missing values
-- Checked for duplicate rows and duplicate `comment_text`
-- Removed duplicate comments
-- Applied light text cleaning:
-  - lowercasing
-  - URL replacement
-  - email replacement
-  - whitespace normalization
+
+### 1. Data Preparation
+- Removed missing values and duplicates  
+- Cleaned text (lowercase, URLs, emails, whitespace normalization)
+
+---
 
 ### 2. Feature Engineering
-Created simple interpretable text features, including:
-- character count
-- word count
-- exclamation count
-- question count
-- digit count
-- uppercase count
-- uppercase ratio
+- TF-IDF (unigrams + bigrams)
+- Lightweight interpretable features (word count, punctuation, etc.)
+
+---
 
 ### 3. Exploratory Data Analysis (EDA)
-Performed EDA to better understand the data and relationships between variables:
-- class distribution of triage labels
-- summary statistics of engineered features by class
-- word count distribution by class
-- character count distribution by class
-- top unigrams by class
-- top bigrams by class
-- qualitative sample comments from each class
+Key findings:
+- Severe **class imbalance** (safe dominates)
+- **needs_review** is the most ambiguous class
+- Toxicity is often expressed via **phrases (n-grams)** rather than single words
+- Text length is not a strong predictor
+
+---
 
 ### 4. Baseline Model
-Used a baseline text classification pipeline:
-- **TF-IDF vectorization** (word unigrams and bigrams)
-- **Logistic Regression** with `class_weight="balanced"`
+- TF-IDF + Logistic Regression  
+- Stratified train/test split  
+- Evaluated using **macro F1-score**
 
-### 5. Evaluation Metric
-The primary evaluation metric is **macro F1-score**.
+---
 
-**Why macro F1?**
-The triage classes are highly imbalanced, so macro F1 gives equal weight to each class instead of letting the majority `safe` class dominate the score.
+### 5. Model Improvements
 
-## Results
-### EDA Summary
-- The derived triage labels are strongly imbalanced:
-  - **safe:** 143,346 (89.83%)
-  - **needs_review:** 13,238 (8.30%)
-  - **high_risk:** 2,987 (1.87%)
-- This imbalance supports using **macro F1** instead of accuracy alone.
-- `needs_review` overlaps behaviorally with both `safe` and `high_risk`, making it the most ambiguous class.
-- Engineered text features show differences across classes, especially around punctuation intensity and uppercase usage.
-- N-gram analysis highlights stronger toxic lexical signals in `high_risk`, while `needs_review` includes more borderline language patterns.
+#### Class Weighting
+- Applied `class_weight="balanced"`
+- Improved recall for minority classes
 
-### Baseline Model Performance
-Using **TF-IDF + Logistic Regression** on a stratified train/test split:
+#### Threshold Tuning
+- Custom decision thresholds applied to probabilities
+- Prioritized **high-risk detection over accuracy**
 
-- **Macro F1-score:** **0.6936**
-- **Accuracy:** **0.9257**
+---
 
-Per-class results:
-- **high_risk** F1: **0.4973**
-- **needs_review** F1: **0.6159**
-- **safe** F1: **0.9676**
+## Model Comparison
 
-### Interpretation
-- The baseline performs very well on the dominant `safe` class.
-- Performance is weaker on `high_risk`, which is expected because it is the rarest class.
-- The biggest challenge is correctly handling ambiguous cases, which supports the project's human-in-the-loop triage framing.
+| Model | Accuracy | Macro F1 | High-Risk Recall |
+|------|---------|----------|------------------|
+| Baseline | ~0.94 | ~0.67 | 0.30 |
+| Class Weighted | ~0.90 | ~0.66 | 0.62 |
+| Threshold Tuned | ~0.88 | ~0.62 | 0.74 |
+
+### Key Insight
+The system was intentionally optimized for **recall on high-risk content**, even at the cost of precision and accuracy.
+
+---
+
+## Error Analysis
+
+Key failure patterns:
+- Over-reliance on keywords
+- Difficulty with **sarcasm and tone**
+- Misclassification of **context-dependent language**
+- Confusion between **needs_review vs high_risk**
+
+---
+
+## Synthetic Edge Case Testing
+
+Custom test cases were created to evaluate:
+- sarcasm
+- ambiguity
+- borderline toxicity
+
+Findings:
+- Strong performance on clear cases
+- Weak performance on sarcasm and tone-dependent language
+
+---
+
+## System Design
+
+Pipeline:
+
+1. Input text  
+2. Text preprocessing  
+3. TF-IDF feature extraction  
+4. Logistic Regression prediction (probabilities)  
+5. Threshold-based decision logic  
+6. Output routing  
+
+---
+
+## Human-in-the-Loop Workflow
+
+- **safe** → auto-approved  
+- **needs_review** → sent to human reviewer  
+- **high_risk** → flagged for immediate action  
+
+This ensures:
+- efficiency for safe content  
+- safety for harmful content  
+- oversight for ambiguous cases  
+
+---
 
 ## Key Takeaways
-- A triage-based moderation workflow is feasible with a classical NLP baseline.
-- The main modeling challenge is class imbalance and ambiguity between `needs_review` and `high_risk`.
-- The current baseline is strong enough to act as a comparison point for Module 24.
 
-## Next Steps (Module 24)
-- Test additional models for comparison (for example, Linear SVM or Naive Bayes)
-- Improve feature engineering and preprocessing
-- Add more structured error analysis and threshold tuning
-- Refine notebook presentation for technical and non-technical audiences
+- A simple, interpretable model can support real-world moderation workflows  
+- **Class imbalance and ambiguity are the main challenges**  
+- **Threshold tuning is critical** for risk-sensitive systems  
+- Human review is essential for contextual understanding  
+
+---
+
+## Limitations
+
+- Cannot understand **context, sarcasm, or tone**
+- Relies heavily on **keywords**
+- Struggles with **ambiguous cases**
+- Linear model limits complex pattern learning
+
+---
+
+## Future Improvements
+
+- Use transformer models (e.g., BERT) for contextual understanding  
+- Improve dataset balance  
+- Add reviewer feedback loop  
+- Deploy as a real-time moderation API  
+
+---
+
+## Why This Project Matters
+
+In real-world systems, AI does not replace humans—it **augments decision-making**.
+
+This project demonstrates how machine learning can:
+- reduce manual workload  
+- prioritize risk  
+- enable scalable moderation  
+
+---
 
 ## Repository Structure
-A clean recommended structure:
-
-```text
 jigsaw_toxic_comment/
 ├── README.md
 ├── 01_jigsaw_eda_and_cleaning.ipynb
 ├── data/
 │   └── train.csv
-```
 
-## Jupyter Notebook
-Main analysis notebook:
-- `notebooks/01_jigsaw_eda_and_cleaning.ipynb`
 
-After uploading to GitHub, replace the line below with your actual notebook link if desired:
-- Notebook link: `https://github.com/uvardan/jigsaw_toxic_comment/01_jigsaw_eda_and_cleaning.ipynb`
+---
 
 ## How to Run
-1. Clone the repository
-2. Install dependencies
-3. Place `train.csv` in the `data/` folder
-4. Open and run the notebook in Jupyter
 
-## Submission Note
-For this module, the primary deliverables are:
-- the Jupyter notebook(s)
-- the updated `README.md`
-- the GitHub repository link submitted to the course portal
+1. Clone repository  
+2. Install dependencies  
+3. Place dataset in `data/`  
+4. Run notebook  
+
+---
+
+## Final Note
+
+This project focuses on **system design, interpretability, and decision-making**, rather than maximizing model complexity. It demonstrates how classical NLP methods can be effectively used to build reliable AI-assisted workflows.
